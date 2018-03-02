@@ -1,7 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Acer7551GFanControl", "Acer7551GFanControl\Acer7551GFanControl.csproj", "{7F3CE570-A1CB-4103-999E-2D342E6E0776}"
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcerFanControl", "Acer7551GFanControl\AcerFanControl.csproj", "{7F3CE570-A1CB-4103-999E-2D342E6E0776}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3EBB8D92-6F60-4159-8244-7EA51F8970D9}
 	EndGlobalSection
 EndGlobal

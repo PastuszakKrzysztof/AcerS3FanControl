@@ -1,24 +1,57 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<fanspeed>
-  <profile type="linear" default="true">
-    <name>Quiet</name>
-    <interval>500</interval>
-    <point temp="30" fan="0" />
-    <point temp="40" fan="10" />
-    <point temp="50" fan="30" />
-    <point temp="60" fan="60" />
-    <point temp="70" fan="100" />
-  </profile>
-  <profile type="linear">
-    <name>Cool</name>
-    <interval>500</interval>
-    <point temp="30" fan="0" />
-    <point temp="60" fan="100" />
-  </profile>
-  <profile type="linear">
-    <name>Full Speed</name>
-    <interval>500</interval>
-    <point temp="0" fan="100" />
-    <point temp="99" fan="100" />
-  </profile>
-</fanspeed>
+
+<configuration>
+
+	<fanprofiles>
+		<profile default="true">
+			<name>Quiet</name>
+			<interval>1000</interval>
+			<hysteresis_up>3</hysteresis_up>
+			<hysteresis_down>4</hysteresis_down>
+			<point temp="0" fan="20" />
+			<point temp="40" fan="25" />
+			<point temp="55" fan="50" />
+			<point temp="60" fan="65" />
+			<point temp="65" fan="100" />
+		</profile>
+		<profile>
+			<name>Cool</name>
+			<interval>1000</interval>
+			<hysteresis_up>2</hysteresis_up>
+			<hysteresis_down>4</hysteresis_down>
+			<point temp="30" fan="30" />
+			<point temp="50" fan="50" />
+			<point temp="60" fan="100" />
+		</profile>
+		<profile>
+			<name>Ramp</name>
+			<interval>1000</interval>
+			<hysteresis_up>1</hysteresis_up>
+			<hysteresis_down>1</hysteresis_down>
+			<point temp="0" fan="0" />
+			<point temp="80" fan="100" />
+		</profile>
+	</fanprofiles>
+
+	<general>
+		<interval>1000</interval>
+		<timeout>900</timeout>
+		<spinwait>4096</spinwait>
+		<fanspeedscale>-1.95</fanspeedscale>
+		<cputempscale>1</cputempscale>
+	</general>
+
+	<tvicports>
+		<location address="0x62" />
+		<data address="0x62" />
+		<status address="0x66">
+			<canread mask="3" operation="!=">0</canread>
+			<canwrite mask="2" operation="!=">0</canwrite>
+		</status>
+		<instruction address="0x66" read="0x80" write="0x81" />
+		<control address="0x93" manual="0x14" bios="0x04" />
+		<cputemp address="0xA8" />
+		<fanspeed address="0x94" />
+	</tvicports>
+
+</configuration>
