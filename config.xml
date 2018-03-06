@@ -2,60 +2,56 @@
 
 <configuration>
 
-	<fanprofiles>
-		<profile default="true">
-			<name>Quiet</name>
-			<interval>1000</interval>
-      <hysteresis up="3" down="4" />
-			<point temp="0" fan="20" />
-			<point temp="40" fan="25" />
-			<point temp="55" fan="50" />
-			<point temp="60" fan="65" />
-			<point temp="65" fan="100" />
-		</profile>
-		<profile>
-			<name>Cool</name>
-			<interval>1000</interval>
-      <hysteresis up="2" down="4" />
-			<point temp="30" fan="30" />
-			<point temp="50" fan="50" />
-			<point temp="60" fan="100" />
-		</profile>
-		<profile>
-			<name>Ramp</name>
-			<interval>1000</interval>
-      <hysteresis up="1" down="1" />
-      <point temp="0" fan="0" />
-      <point temp="75" fan="100" />
-    </profile>
-    <profile>
-      <name>SmoothRamp</name>
+  <general>
+    <hysteresis up="3" down="2" />    --Default setting if not specified in fanprofile.
+    <interval>1000</interval>         --Default setting if not specified in fanprofile.
+    <timeout>500</timeout>            --Should be less than interval. If 3 timeouts occur over the last 10 intervals, an exception will be thrown and the app will exit.
+    <spinwait>4096</spinwait>         --How many cycles the CPU should wait per communication with the fan controller.
+    <fanspeedscale>-1.95</fanspeedscale> --Divides the 8bit fan speed value to get the fanspeed percent. If negative, equation is (255 - value/fanspeedscale)
+    <cputempscale>1</cputempscale>    --Divides the 8bit temp value to get the temperature. If negative, equation is (255 - value/cputempscale). Use this to offset reported temperature if it is slightly wrong.
+  </general>
+
+  <fanprofiles>
+    <profile name="Quiet" default="true">
+      <name>Quiet</name>
       <interval>1000</interval>
-      <hysteresis up="3" down="3" />
-      <point temp="0" fan="0" />
-      <point temp="75" fan="100" />
-    </profile>    
-	</fanprofiles>
+      <hysteresis up="3" down="4" />
+      <point temp="0" fan="20" />
+      <point temp="40" fan="25" />
+      <point temp="55" fan="50" />
+      <point temp="60" fan="65" />
+      <point temp="65" fan="100" />
+    </profile>
+    <profile name="Cool">
+      <interval>1000</interval>
+      <hysteresis up="2" down="4" />
+      <point temp="30" fan="30" />
+      <point temp="50" fan="50" />
+      <point temp="60" fan="100" />
+    </profile>
+    <profile name="Ramp 1% every 1°">
+      <point temp="20" fan="20" />  --Disallow below 20% fan speed. Anything less than 40% is silent anyway.
+      <point temp="70" fan="70" />
+      <point temp="75" fan="100" /> --Prevent higher than 75C, ramp up to full fan speed
+    </profile>
+    <profile name="Ramp 6% every 5°">
+      <point temp="20" fan="24" />
+      <point temp="70" fan="84" />
+      <point temp="75" fan="100" /> --Prevent higher than 75C, ramp up to full fan speed
+    </profile>
+  </fanprofiles>
 
-	<general>
-		<interval>1000</interval>
-		<timeout>900</timeout>
-		<spinwait>4096</spinwait>
-		<fanspeedscale>-1.95</fanspeedscale>
-		<cputempscale>1</cputempscale>
-	</general>
-
-	<tvicports>
-		<location address="0x62" />
-		<data address="0x62" />
-		<status address="0x66">
-			<canread mask="3" operation="!=">0</canread>
-			<canwrite mask="2" operation="!=">0</canwrite>
-		</status>
-		<instruction address="0x66" read="0x80" write="0x81" />
-		<control address="0x93" manual="0x14" bios="0x04" />
-		<cputemp address="0xA8" />
-		<fanspeed address="0x94" />
-	</tvicports>
+  <tvicports>
+    <location address="0x62" />   --The address of the register to place the location (address) we want to read or write to.
+    <data address="0x62" />       --The address of the register data is read or written to. This contains the data pointed to by the location.
+    <status address="0x66">       --Address of the fan controllers status register
+      <canread mask="3" operation="!=">0</canread>    --Check to see if controller is ready to read.
+      <canwrite mask="2" operation="!=">0</canwrite>  --Check to see if controller is ready to write.
+    </status>
+    <instruction address="0x66" read="0x80" write="0x81" /> --Address to write "read" or "write" value to, to tell the controller our intention.
+    <control address="0x93" manual="0x14" bios="0x04" />    --Address to write to, to switch between manual fan control and BIOS fan control modes.
+    <cputemp address="0xA8" />    --Address to read CPUTemperature from
+    <fanspeed address="0x94" />   --Address to read and write Fanspeed
+  </tvicports>
 
 </configuration>

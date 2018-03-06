@@ -60,7 +60,7 @@ namespace AcerFanControl {
 				} else {
 					await Config.SaveDefaultConfigFile();
 				}
-				micf.Text = "Reload Config File";
+				micf.Text = "Reload " + Configuration.DefaultConfigFileName;
 				micf.Click += HandleLoadConfigFileEvent;
 
 			} catch (Exception ex) {

@@ -56,39 +56,51 @@ namespace AcerFanControl {
 			RunProfileInternal();			
 		}
 
+		private DateTime[] _exceptionTimes = new DateTime[2];
 		private void RunProfileInternal() {
-			CPUTemperature = (byte)((EC.CPUTemperature - (Config.General.cputempscale < 0 ? 255 : 0)) / Config.General.cputempscale);
+			try {
+				CPUTemperature = (byte)((EC.CPUTemperature - (Config.General.cputempscale < 0 ? 255 : 0)) / Config.General.cputempscale);
 
-			if (_profile.IsBIOS) {
-				_fanSpeed = (byte)((EC.FanSpeed - (Config.General.fanspeedscale < 0 ? 255 : 0)) / Config.General.fanspeedscale);
-				BiosControl = true;
-			} else  {
-				if (CPUTemperature >= _priorTemp + _profile.UpHysteresis || CPUTemperature <= _priorTemp - _profile.DownHysteresis) {
-					byte lTemp = 0, lFan = 0;
-					byte hTemp = 99, hFan = 100;
+				if (_profile.IsBIOS) {
+					_fanSpeed = (byte)((EC.FanSpeed - (Config.General.fanspeedscale < 0 ? 255 : 0)) / Config.General.fanspeedscale);
+					BiosControl = true;
+				} else {
+					if (CPUTemperature >= _priorTemp + _profile.UpHysteresis || CPUTemperature <= _priorTemp - _profile.DownHysteresis) {
+						byte lTemp = 0, lFan = 0;
+						byte hTemp = 99, hFan = 100;
 
-					for (var i = 0; i < _profile.Points.Length; i++) {
-						byte pTemp = _profile.Points[i].Temperature;
-						byte pFan = _profile.Points[i].FanSpeed;
-						if (pTemp <= CPUTemperature && pTemp > lTemp) { lTemp = pTemp; lFan = pFan; }
-						if (pTemp >= CPUTemperature && pTemp < hTemp) { hTemp = pTemp; hFan = pFan; }
-					}
+						for (var i = 0; i < _profile.Points.Length; i++) {
+							byte pTemp = _profile.Points[i].Temperature;
+							byte pFan = _profile.Points[i].FanSpeed;
+							if (pTemp <= CPUTemperature && pTemp > lTemp) { lTemp = pTemp; lFan = pFan; }
+							if (pTemp >= CPUTemperature && pTemp < hTemp) { hTemp = pTemp; hFan = pFan; }
+						}
 
-					if (lTemp == hTemp) {
-						FanSpeed = hFan;
-					} else {
-						int divisor = hTemp - lTemp;
-						if(divisor == 0) { divisor = 1; }
-						float slope = (hFan-lFan)/(float)divisor;
-						FanSpeed = (byte)(lFan + slope * (CPUTemperature - lTemp));
+						if (lTemp == hTemp) {
+							FanSpeed = hFan;
+						} else {
+							int divisor = hTemp - lTemp;
+							if (divisor == 0) { divisor = 1; }
+							float slope = (hFan-lFan)/(float)divisor;
+							FanSpeed = (byte)(lFan + slope * (CPUTemperature - lTemp));
+						}
 					}
 				}
+				Program.TrayIconCtx.Update(_profile, CPUTemperature, _fanSpeed);
+			} catch (Exception ex) {
+				//Only throw if 3rd exception over last 10 cycles. 
+				DateTime cutoff = DateTime.Now.AddMilliseconds(-(_profile.Interval * 10));		
+				if(_exceptionTimes[0] > cutoff  && _exceptionTimes[1] > cutoff) {
+					throw ex;
+				} else {
+					Array.Sort(_exceptionTimes); //So the earlier date is towards the front.
+					_exceptionTimes[ 0 ] = DateTime.Now;
+				}
 			}
-			Program.TrayIconCtx.Update(_profile, CPUTemperature, _fanSpeed);
 		}
 
 
-#region IDisposable Support
+		#region IDisposable Support
 		private bool disposedValue = false; // To detect redundant calls
 		public void Dispose() {
 			if (!disposedValue) {
