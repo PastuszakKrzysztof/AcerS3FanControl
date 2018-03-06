@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.IO;
+using System.Collections.Generic;
 
 namespace AcerFanControl {
 
@@ -23,7 +24,7 @@ namespace AcerFanControl {
 		public TrayIcon() {
 			components = new System.ComponentModel.Container();
 			notifyIcon = new NotifyIcon(this.components);
-			RenderIcon(-1, 0);
+			RenderIcon(255, 0);
 			notifyIcon.Visible = true;
 			contextMenu = new ContextMenu();
 			notifyIcon.ContextMenu = contextMenu;
@@ -59,7 +60,7 @@ namespace AcerFanControl {
 				} else {
 					await Config.SaveDefaultConfigFile();
 				}
-				micf.Text = "Reload Config File";
+				micf.Text = "Reload " + Configuration.DefaultConfigFileName;
 				micf.Click += HandleLoadConfigFileEvent;
 
 			} catch (Exception ex) {
@@ -93,7 +94,7 @@ There seems to be a lot of sketchy sites offering the download. The file should 
 
 			FanProfile selected = null;
 
-			for (int i = 0, len = Config.AllProfiles.Count; i < len; i++) {
+			for (int i = 0, len = Config.AllProfiles.Length; i < len; i++) {
 				FanProfile profile = Config.AllProfiles[i];
 				ProfileMenuItem menuItem = new ProfileMenuItem(profile);
 				menuItem.Click += HandleProfileMenuItemClick;
@@ -151,10 +152,24 @@ There seems to be a lot of sketchy sites offering the download. The file should 
 		private Bitmap _trayIcon16 = Properties.Resources.icon16;
 		private Bitmap _trayFont16 = Properties.Resources.font16;
 		private Brush _whiteBrush = new SolidBrush(Color.FromArgb(255, 255, 255));
-		private void RenderIcon(int temp, int fan) {
+		private Dictionary<UInt16, Icon> _iconCache = new Dictionary<UInt16, Icon>(128);
+
+		private void RenderIcon(byte temp, byte fan) {
+			if(temp > 100) { temp = 100; }
+			if(fan > 100) { fan = 100; }
+			UInt16 key = (UInt16)((fan << 7) | temp);
+			Icon icon = null;
+			if(!_iconCache.TryGetValue(key, out icon)) {
+				icon = BuildIcon(temp, fan);
+				_iconCache[ key ] = icon;
+			}
+			notifyIcon.Icon = icon;
+		}
+
+		private Icon BuildIcon(byte temp, byte fan) {
 			using(Bitmap bitmap = new Bitmap(_trayIcon16))
 			using (Graphics graphics = Graphics.FromImage(bitmap)) {
-				if (temp >= 0 && temp <= 99) {
+				if (temp <= 99) {
 					graphics.DrawImage(_trayFont16, new Rectangle(0, 0, 8, 11), new Rectangle(((temp / 10) % 10) * 8, 0, 8, 11), GraphicsUnit.Pixel);
 					graphics.DrawImage(_trayFont16, new Rectangle(8, 0, 8, 11), new Rectangle((temp % 10) * 8, 0, 8, 11), GraphicsUnit.Pixel);
 				} else {
@@ -162,11 +177,11 @@ There seems to be a lot of sketchy sites offering the download. The file should 
 					graphics.DrawImage(_trayFont16, new Rectangle(8, 0, 8, 11), new Rectangle(80, 0, 8, 11), GraphicsUnit.Pixel);
 				}
 				graphics.FillRectangle(_whiteBrush, 1, 12, fan * 14 / 100, 3);
-				Icon prevIcon = notifyIcon.Icon;
-				notifyIcon.Icon = Icon.FromHandle(bitmap.GetHicon());
-				if (prevIcon != null) DestroyIcon(prevIcon.Handle);
+				return Icon.FromHandle(bitmap.GetHicon());
 			}
 		}
+
+
 
 		internal class ProfileMenuItem : MenuItem {
 			internal FanProfile Profile { get; }

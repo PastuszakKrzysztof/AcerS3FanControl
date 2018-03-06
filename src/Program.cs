@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.IO;
+
 
 namespace AcerFanControl {
 	static class Program {
@@ -28,7 +23,8 @@ namespace AcerFanControl {
 				Regulator = new Regulator();
 				TrayIconCtx = new TrayIcon();
 				TrayIconCtx.Init();
-
+				Application.Idle += OnIdle;
+				Application.ApplicationExit += OnExit;
 				Application.Run(TrayIconCtx);
 
 			} catch (Exception e) {
@@ -36,6 +32,17 @@ namespace AcerFanControl {
 			} finally {
 				Regulator.BiosControl = true;
 			}
+		}
+
+		private static void OnIdle(object sender, EventArgs ev) {
+			Application.Idle -= OnIdle;
+			GC.Collect(2, GCCollectionMode.Forced, true, true);
+		}
+		private static void OnExit(object sender, EventArgs ev) {
+			try {
+				FanController.BiosControl = true;
+				Regulator.BiosControl = true;
+			} catch { }
 		}
 
 	}

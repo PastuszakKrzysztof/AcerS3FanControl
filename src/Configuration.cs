@@ -1,14 +1,8 @@
 using System;
-using System.Collections.Specialized;
 using System.Text;
 using System.Xml;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Globalization;
 
 namespace AcerFanControl {
 
@@ -19,11 +13,11 @@ namespace AcerFanControl {
 
 		private GeneralOptions _general;
 		private TVicPortOptions _ports;
-		private List<FanProfile> _allProfiles;
+		private FanProfile[] _allProfiles;
 		
 		public GeneralOptions General => _general;
 		public TVicPortOptions Ports => _ports;
-		public List<FanProfile> AllProfiles => _allProfiles;
+		public FanProfile[] AllProfiles => _allProfiles;
 
 
 		public Configuration() {
@@ -45,10 +39,11 @@ namespace AcerFanControl {
 			GeneralOptions general = new GeneralOptions(doc.SelectSingleNode("//configuration/general"));
 			TVicPortOptions ports = new TVicPortOptions(doc.SelectSingleNode("//configuration/tvicports"));
 
-			List<FanProfile> profiles = new List<FanProfile>();
+			//List<FanProfile> profiles = new List<FanProfile>();
 			XmlNodeList xmlProfileDefs = doc.SelectNodes("//configuration/fanprofiles/profile");
-			for (int i = 0; i < xmlProfileDefs.Count; i++) { profiles.Add(new FanProfile(xmlProfileDefs[ i ], general.interval)); }
-
+			FanProfile[] profiles = new FanProfile[xmlProfileDefs.Count];
+			for (int i = 0; i < profiles.Length; i++) { profiles[i] = (new FanProfile(xmlProfileDefs[ i ], general)); }
+			
 			//If we got this far, there was no exception.  So it's safe to actually use the values. 
 			this._general = general;
 			this._ports = ports;
@@ -57,7 +52,7 @@ namespace AcerFanControl {
 
 		private static async Task<bool> SaveFanConfigFile(string sFilePath, string sxml) {
 			using (FileStream fs = new FileStream(sFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)) {
-				using(StreamWriter writer = new StreamWriter(fs, Encoding.ASCII)) {
+				using(StreamWriter writer = new StreamWriter(fs, Encoding.UTF8)) {
 					await writer.WriteAsync(sxml);
 					return true;
 				}
@@ -66,7 +61,7 @@ namespace AcerFanControl {
 
 		private static async Task<string> ReadFanConfigFile(string sFilePath) {
 			using (FileStream fs = new FileStream(sFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-				using (StreamReader reader = new StreamReader(fs, System.Text.Encoding.ASCII)) {
+				using (StreamReader reader = new StreamReader(fs, System.Text.Encoding.UTF8)) {
 					return await reader.ReadToEndAsync();
 				}
 			}
@@ -78,6 +73,8 @@ namespace AcerFanControl {
 		public readonly Int16 interval;
 		public readonly Int16 timeout;
 		public readonly Int16 spinwait;
+		public readonly byte UpHysteresis;
+		public readonly byte DownHysteresis;
 		/// <summary> Scale for converting fanspeed percent to 255 values. </summary>
 		public readonly float fanspeedscale;
 		public readonly float cputempscale;
@@ -86,6 +83,10 @@ namespace AcerFanControl {
 			interval = Utils.ParseInt16(node.SelectSingleNode(nameof(interval)).InnerText);
 			timeout = Utils.ParseInt16(node.SelectSingleNode(nameof(timeout)).InnerText);
 			spinwait = Utils.ParseInt16(node.SelectSingleNode(nameof(spinwait)).InnerText);
+
+			XmlNode hysteresis = node.SelectSingleNode("hysteresis");
+			UpHysteresis = Utils.ParseByte(hysteresis?.Attributes["up"]?.Value);
+			DownHysteresis = Utils.ParseByte(hysteresis?.Attributes["down"]?.Value);
 
 			fanspeedscale = float.Parse(node.SelectSingleNode(nameof(fanspeedscale)).InnerText);
 			cputempscale = float.Parse(node.SelectSingleNode(nameof(cputempscale)).InnerText);
@@ -178,11 +179,14 @@ namespace AcerFanControl {
 
 		internal FanProfile() { }
 
-		internal FanProfile(XmlNode node, int interval) {
-			Name = node.SelectSingleNode("name").InnerText;
-			if (!int.TryParse(node.SelectSingleNode("interval")?.InnerText, out this.Interval)) { this.Interval = interval; }
-			byte.TryParse(node.SelectSingleNode("hysteresis_up")?.InnerText, out UpHysteresis);
-			byte.TryParse(node.SelectSingleNode("hysteresis_down")?.InnerText, out DownHysteresis);
+		internal FanProfile(XmlNode node, GeneralOptions defaults) {
+			Name = node.Attributes["name"].Value;
+			this.Interval = Utils.ParseInt32(node.SelectSingleNode("interval")?.InnerText, defaults.interval);
+
+			XmlNode hysteresis = node.SelectSingleNode("hysteresis");
+			UpHysteresis = Utils.ParseByte(hysteresis?.Attributes["up"]?.Value, defaults.UpHysteresis);
+			DownHysteresis = Utils.ParseByte(hysteresis?.Attributes["down"]?.Value, defaults.DownHysteresis);
+
 			bool.TryParse(node.Attributes[ "default" ]?.Value, out IsDefault);
 
 			XmlNodeList cfgPoints = node.SelectNodes("point");
