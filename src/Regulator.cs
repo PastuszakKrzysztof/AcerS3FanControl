@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Collections.Generic;
 
 namespace AcerFanControl {
 
@@ -14,7 +14,6 @@ namespace AcerFanControl {
 		private System.Windows.Forms.Timer _timer; //Use Windows Forms Timer so we don't have to create another thread or marshall any contexts. 
 		private FanProfile _profile;
 
-	
 		public byte CPUTemperature { get; private set; } = 0;
 
 		public bool BiosControl {

@@ -1,14 +1,8 @@
 using System;
-using System.Collections.Specialized;
 using System.Text;
 using System.Xml;
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Globalization;
 
 namespace AcerFanControl {
 
@@ -19,11 +13,11 @@ namespace AcerFanControl {
 
 		private GeneralOptions _general;
 		private TVicPortOptions _ports;
-		private List<FanProfile> _allProfiles;
+		private FanProfile[] _allProfiles;
 		
 		public GeneralOptions General => _general;
 		public TVicPortOptions Ports => _ports;
-		public List<FanProfile> AllProfiles => _allProfiles;
+		public FanProfile[] AllProfiles => _allProfiles;
 
 
 		public Configuration() {
@@ -45,10 +39,11 @@ namespace AcerFanControl {
 			GeneralOptions general = new GeneralOptions(doc.SelectSingleNode("//configuration/general"));
 			TVicPortOptions ports = new TVicPortOptions(doc.SelectSingleNode("//configuration/tvicports"));
 
-			List<FanProfile> profiles = new List<FanProfile>();
+			//List<FanProfile> profiles = new List<FanProfile>();
 			XmlNodeList xmlProfileDefs = doc.SelectNodes("//configuration/fanprofiles/profile");
-			for (int i = 0; i < xmlProfileDefs.Count; i++) { profiles.Add(new FanProfile(xmlProfileDefs[ i ], general.interval)); }
-
+			FanProfile[] profiles = new FanProfile[xmlProfileDefs.Count];
+			for (int i = 0; i < profiles.Length; i++) { profiles[i] = (new FanProfile(xmlProfileDefs[ i ], general.interval)); }
+			
 			//If we got this far, there was no exception.  So it's safe to actually use the values. 
 			this._general = general;
 			this._ports = ports;
@@ -181,8 +176,9 @@ namespace AcerFanControl {
 		internal FanProfile(XmlNode node, int interval) {
 			Name = node.SelectSingleNode("name").InnerText;
 			if (!int.TryParse(node.SelectSingleNode("interval")?.InnerText, out this.Interval)) { this.Interval = interval; }
-			byte.TryParse(node.SelectSingleNode("hysteresis_up")?.InnerText, out UpHysteresis);
-			byte.TryParse(node.SelectSingleNode("hysteresis_down")?.InnerText, out DownHysteresis);
+			XmlNode hysteresis = node.SelectSingleNode("hysteresis");
+			byte.TryParse(hysteresis?.Attributes["up"]?.Value, out UpHysteresis);
+			byte.TryParse(hysteresis?.Attributes["down"]?.Value, out DownHysteresis);
 			bool.TryParse(node.Attributes[ "default" ]?.Value, out IsDefault);
 
 			XmlNodeList cfgPoints = node.SelectNodes("point");
