@@ -3,6 +3,7 @@ using System.Text;
 using System.Xml;
 using System.IO;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace AcerFanControl {
 
@@ -88,8 +89,8 @@ namespace AcerFanControl {
 			UpHysteresis = Utils.ParseByte(hysteresis?.Attributes["up"]?.Value);
 			DownHysteresis = Utils.ParseByte(hysteresis?.Attributes["down"]?.Value);
 
-			fanspeedscale = float.Parse(node.SelectSingleNode(nameof(fanspeedscale)).InnerText);
-			cputempscale = float.Parse(node.SelectSingleNode(nameof(cputempscale)).InnerText);
+			fanspeedscale = float.Parse(node.SelectSingleNode(nameof(fanspeedscale)).InnerText, CultureInfo.InvariantCulture);
+			cputempscale = float.Parse(node.SelectSingleNode(nameof(cputempscale)).InnerText, CultureInfo.InvariantCulture);
 		}
 	}
 
